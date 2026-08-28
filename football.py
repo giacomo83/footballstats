@@ -443,10 +443,11 @@ if uploaded_file is not None:
                     tiri_t = np.cumsum(tiri_t_raw) / x_vals
                     tiri_p = np.cumsum(tiri_p_raw) / x_vals
                     
-                    x_ind = np.arange(len(x_vals))
                     width = 0.35
-                    ax2.bar(x_ind - width/2, tiri_t, width, label='Media Tiri Totali', color='#457b9d')
-                    ax2.bar(x_ind + width/2, tiri_p, width, label='Media Tiri in Porta', color='#1d3557')
+                    # Utilizziamo direttamente x_vals come posizioni (da 1 a N)
+                    ax2.bar(x_vals - width/2, tiri_t, width, label='Media Tiri Totali', color='#457b9d')
+                    ax2.bar(x_vals + width/2, tiri_p, width, label='Media Tiri in Porta', color='#1d3557')
+                    
                     ax2.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
                     ax2.set_xticks(x_vals)
                     ax2.set_xticklabels(x_vals, fontsize=6)
@@ -473,7 +474,6 @@ if uploaded_file is not None:
                     ax3.plot(x_vals, angoli_fav, marker='s', markersize=3, color='#2a9d8f', label="Media Angoli Favore", linewidth=1.5)
                     ax3.plot(x_vals, angoli_con, marker='^', markersize=3, color='#e76f51', label="Media Angoli Contro", linewidth=1.5, linestyle=':')
                     
-                    # Forza l'asse x a mostrare unità intere distinte
                     ax3.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
                     ax3.set_xticks(x_vals)
                     
