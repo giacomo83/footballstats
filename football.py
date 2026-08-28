@@ -202,12 +202,12 @@ if uploaded_file is not None:
                 st.markdown("#### ⚽ Rendimento e Gol")
                 df_rendimento = pd.DataFrame({
                     "Metrica": [
-                        "Partite Giocate (Casa / Trasferta)", 
-                        "Vittorie (Casa / Trasferta)", 
-                        "Pareggi (Casa / Trasferta)", 
-                        "Sconfitte (Casa / Trasferta)", 
-                        "Gol Fatti (Totali / Media)", 
-                        "Gol Subiti (Totali / Media)",
+                        "Partite Giocate Totali (Casa / Trasferta)", 
+                        "Vittorie Totali (Casa / Trasferta)", 
+                        "Pareggi Totali (Casa / Trasferta)", 
+                        "Sconfitte Totali (Casa / Trasferta)", 
+                        "Gol Fatti Totali (Media)", 
+                        "Gol Subiti Totali (Media)",
                         "Media Punti per Partita"
                     ],
                     "Valore": [
