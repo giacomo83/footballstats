@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import seaborn as sns
 
 # Configurazione della pagina Streamlit
@@ -60,8 +61,9 @@ traduzioni_colonne = {
 
 # Titolo Principale
 st.title("⚽ Statistiche Calcio")
-st.markdown("Carica il file CSV da https://www.football-data.co.uk/")
-st.markdown("<p style='font-size: 13px; font-style: italic; color: #555555;'>realizzato da Giacomo Bertè e Luca Bertè - tutti i diritti riservati</p>", unsafe_allow_html=True)
+st.markdown("Carica il file CSV scaricandolo da https://www.football-data.co.uk/")
+st.markdown("<p style='font-size: 13px; font-style: italic; color: #555555;'>realizzato da Giacomo Bertè, Fabio Bertè e Luca Bertè - tutti i diritti riservati</p>", unsafe_allow_html=True)
+
 # Sidebar per il caricamento del file
 st.sidebar.header("📁 Caricamento Dati CSV")
 uploaded_file = st.sidebar.file_uploader("Carica il file CSV settimanale", type=["csv"])
@@ -174,7 +176,7 @@ if uploaded_file is not None:
             st.dataframe(df_partite_sto, use_container_width=True)
 
         with tab_sq2:
-            st.markdown(f"### 📋 Tabella Analitica Completa: {squadra_selezionata}")
+            st.markdown(f"### 📋 Tabella Analitica Completa: {squadra_selezionata} (Valori Medi)")
             
             tiri_fatti = (df_sq_casa['HS'].sum() if 'HS' in df_sq_casa.columns else 0) + (df_sq_fuori['AS'].sum() if 'AS' in df_sq_fuori.columns else 0)
             tiri_subiti = (df_sq_casa['AS'].sum() if 'AS' in df_sq_casa.columns else 0) + (df_sq_fuori['HS'].sum() if 'HS' in df_sq_fuori.columns else 0)
@@ -191,6 +193,8 @@ if uploaded_file is not None:
 
             xg_fatti = (df_sq_casa['HxG'].sum() if 'HxG' in df_sq_casa.columns else 0) + (df_sq_fuori['AxG'].sum() if 'AxG' in df_sq_fuori.columns else 0)
             xg_subiti = (df_sq_casa['AxG'].sum() if 'AxG' in df_sq_casa.columns else 0) + (df_sq_fuori['HxG'].sum() if 'HxG' in df_sq_fuori.columns else 0)
+
+            div = giocate if giocate > 0 else 1
 
             col_stat1, col_stat2 = st.columns(2)
 
@@ -211,58 +215,63 @@ if uploaded_file is not None:
                         f"{vinte} ({vinte_casa} / {vinte_fuori})",
                         f"{pareggi} ({pareggi_casa} / {pareggi_fuori})",
                         f"{perse} ({perse_casa} / {perse_fuori})",
-                        f"{tot_gf} ({round(tot_gf/giocate, 2) if giocate > 0 else 0})",
-                        f"{tot_gs} ({round(tot_gs/giocate, 2) if giocate > 0 else 0})",
-                        f"{round(punti/giocate, 2) if giocate > 0 else 0}"
+                        f"{tot_gf} ({round(tot_gf/div, 2)})",
+                        f"{tot_gs} ({round(tot_gs/div, 2)})",
+                        f"{round(punti/div, 2)}"
                     ]
                 })
                 df_rendimento.index = range(1, len(df_rendimento) + 1)
                 st.dataframe(df_rendimento, use_container_width=True)
 
             with col_stat2:
-                st.markdown("#### 🎯 Statistiche di Gioco e xG")
+                st.markdown("#### 🎯 Statistiche di Gioco e xG (Valori Medi)")
                 df_gioco = pd.DataFrame({
-                    "Metrica di Gioco": [
+                    "Metrica di Gioco (Media Partita)": [
                         "Tiri Totali (Effettuati / Subiti)",
                         "Tiri in Porta (Effettuati / Subiti)",
                         "Calci d'Angolo (Favore / Contro)",
                         "Expected Goals xG (Prodotti / Concessi)",
-                        "Falli Commessi (Totali)",
-                        "Cartellini Gialli / Rossi"
+                        "Falli Commessi (Media)",
+                        "Cartellini Gialli / Rossi (Media)"
                     ],
-                    "Valore": [
-                        f"{int(tiri_fatti)} / {int(tiri_subiti)}",
-                        f"{int(tirip_fatti)} / {int(tirip_subiti)}",
-                        f"{int(angoli_fatti)} / {int(angoli_subiti)}",
-                        f"{round(xg_fatti, 2)} / {round(xg_subiti, 2)}",
-                        f"{int(falli_fatti)}",
-                        f"{int(gialli)} 🟨 / {int(rossi)} 🟥"
+                    "Valore Medio": [
+                        f"{round(tiri_fatti/div, 2)} / {round(tiri_subiti/div, 2)}",
+                        f"{round(tirip_fatti/div, 2)} / {round(tirip_subiti/div, 2)}",
+                        f"{round(angoli_fatti/div, 2)} / {round(angoli_subiti/div, 2)}",
+                        f"{round(xg_fatti/div, 2)} / {round(xg_subiti/div, 2)}",
+                        f"{round(falli_fatti/div, 2)}",
+                        f"{round(gialli/div, 2)} 🟨 / {round(rossi/div, 2)} 🟥"
                     ]
                 })
                 df_gioco.index = range(1, len(df_gioco) + 1)
                 st.dataframe(df_gioco, use_container_width=True)
 
         with tab_sq3:
-            st.markdown(f"#### 📊 Trend e Grafici Avanzati: {squadra_selezionata}")
+            st.markdown(f"#### 📊 Trend e Grafici Avanzati (Media Progressiva per Giornata): {squadra_selezionata}")
             
-            # --- GRAFICO xG A BARRE VERTICALI (DIMENSIONE UNIFORME BILANCIATA: 4.5 x 2.3) ---
+            x_vals = np.array(range(1, len(df_sq_tot) + 1))
+            
+            # --- GRAFICO xG A BARRE VERTICALI (MEDIA PROGRESSIVA FINO ALLA GIORNATA N) ---
             if 'HxG' in df.columns and 'AxG' in df.columns:
                 fig, ax = plt.subplots(figsize=(4.5, 2.3))
-                x_vals = np.array(range(1, len(df_sq_tot) + 1))
                 
-                xg_prodotti = [r.get('HxG') if r['HomeTeam'] == squadra_selezionata else r.get('AxG') for _, r in df_sq_tot.iterrows()]
-                xg_concessi = [r.get('AxG') if r['HomeTeam'] == squadra_selezionata else r.get('HxG') for _, r in df_sq_tot.iterrows()]
+                xg_prodotti_raw = np.array([r.get('HxG') if r['HomeTeam'] == squadra_selezionata else r.get('AxG') for _, r in df_sq_tot.iterrows()], dtype=float)
+                xg_concessi_raw = np.array([r.get('AxG') if r['HomeTeam'] == squadra_selezionata else r.get('HxG') for _, r in df_sq_tot.iterrows()], dtype=float)
+                
+                xg_prodotti = np.cumsum(xg_prodotti_raw) / x_vals
+                xg_concessi = np.cumsum(xg_concessi_raw) / x_vals
                 
                 width = 0.4
                 
-                ax.bar(x_vals - width/2, xg_prodotti, width, label='xG Prodotto', color='#2a9d8f', edgecolor='black', linewidth=0.4)
-                ax.bar(x_vals + width/2, xg_concessi, width, label='xG Concesso', color='#e76f51', edgecolor='black', linewidth=0.4)
+                ax.bar(x_vals - width/2, xg_prodotti, width, label='Media xG Prodotto', color='#2a9d8f', edgecolor='black', linewidth=0.4)
+                ax.bar(x_vals + width/2, xg_concessi, width, label='Media xG Concesso', color='#e76f51', edgecolor='black', linewidth=0.4)
                 
+                ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
                 ax.set_xticks(x_vals)
                 ax.set_xticklabels(x_vals, fontsize=7)
-                ax.set_title(f"Expected Goals (xG) - {squadra_selezionata}", fontsize=8, fontweight='bold')
-                ax.set_xlabel("Incontro Progressivo", fontsize=6)
-                ax.set_ylabel("Valore xG", fontsize=6)
+                ax.set_title(f"Media Progressiva xG per Giornata - {squadra_selezionata}", fontsize=8, fontweight='bold')
+                ax.set_xlabel("Giornata", fontsize=6)
+                ax.set_ylabel("Media xG", fontsize=6)
                 ax.tick_params(axis='both', labelsize=6)
                 ax.grid(True, linestyle=':', alpha=0.5, axis='y')
                 ax.legend(fontsize=6, loc='upper left', frameon=True)
@@ -366,7 +375,7 @@ if uploaded_file is not None:
 
                     ---
 
-                    ### 📊 Come leggere il grafico
+                    ### 📊 How to read the chart
 
                     - 🟢 **xG Prodotto** → quanto sono state pericolose le occasioni create dalla squadra.
                     - 🔴 **xG Concesso** → quanto sono state pericolose le occasioni concesse agli avversari.
@@ -421,26 +430,29 @@ if uploaded_file is not None:
 
             st.markdown("---")
             
-            # --- ULTERIORI GRAFICI E TENDENZE (DIMENSIONE UNIFORME BILANCIATA: 4.5 x 2.3) ---
+            # --- ULTERIORI GRAFICI E TENDENZE (MEDIA PROGRESSIVA PER GIORNATA) ---
             col_gr1, col_gr2 = st.columns(2)
             
             with col_gr1:
-                st.markdown("##### 🎯 Tiri Totali vs Tiri in Porta")
+                st.markdown("##### 🎯 Media Tiri Totali vs Tiri in Porta")
                 if 'HS' in df.columns and 'HST' in df.columns:
                     fig2, ax2 = plt.subplots(figsize=(4.5, 2.3))
-                    x_vals_tiri = list(range(1, len(df_sq_tot) + 1))
-                    tiri_t = [r.get('HS') if r['HomeTeam'] == squadra_selezionata else r.get('AS') for _, r in df_sq_tot.iterrows()]
-                    tiri_p = [r.get('HST') if r['HomeTeam'] == squadra_selezionata else r.get('AST') for _, r in df_sq_tot.iterrows()]
+                    tiri_t_raw = np.array([r.get('HS') if r['HomeTeam'] == squadra_selezionata else r.get('AS') for _, r in df_sq_tot.iterrows()], dtype=float)
+                    tiri_p_raw = np.array([r.get('HST') if r['HomeTeam'] == squadra_selezionata else r.get('AST') for _, r in df_sq_tot.iterrows()], dtype=float)
                     
-                    x_ind = np.arange(len(x_vals_tiri))
+                    tiri_t = np.cumsum(tiri_t_raw) / x_vals
+                    tiri_p = np.cumsum(tiri_p_raw) / x_vals
+                    
+                    x_ind = np.arange(len(x_vals))
                     width = 0.35
-                    ax2.bar(x_ind - width/2, tiri_t, width, label='Tiri Totali', color='#457b9d')
-                    ax2.bar(x_ind + width/2, tiri_p, width, label='Tiri in Porta', color='#1d3557')
-                    ax2.set_xticks(x_ind)
-                    ax2.set_xticklabels(x_vals_tiri, fontsize=6)
-                    ax2.set_xlabel("Incontro", fontsize=6)
-                    ax2.set_ylabel("Numero Tiri", fontsize=6)
-                    ax2.set_title("Confronto Tiri", fontsize=8, fontweight='bold')
+                    ax2.bar(x_ind - width/2, tiri_t, width, label='Media Tiri Totali', color='#457b9d')
+                    ax2.bar(x_ind + width/2, tiri_p, width, label='Media Tiri in Porta', color='#1d3557')
+                    ax2.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+                    ax2.set_xticks(x_vals)
+                    ax2.set_xticklabels(x_vals, fontsize=6)
+                    ax2.set_xlabel("Giornata", fontsize=6)
+                    ax2.set_ylabel("Media Tiri", fontsize=6)
+                    ax2.set_title("Media Progressiva Tiri per Giornata", fontsize=8, fontweight='bold')
                     ax2.legend(fontsize=6, loc='upper left')
                     ax2.grid(True, linestyle='--', alpha=0.3)
                     plt.tight_layout()
@@ -449,19 +461,26 @@ if uploaded_file is not None:
                     st.info("Dati tiri non sufficienti per il grafico.")
 
             with col_gr2:
-                st.markdown("##### 🚩 Andamento Calci d'Angolo")
+                st.markdown("##### 🚩 Andamento Media Calci d'Angolo")
                 if 'HC' in df.columns and 'AC' in df.columns:
                     fig3, ax3 = plt.subplots(figsize=(4.5, 2.3))
-                    x_vals_ang = list(range(1, len(df_sq_tot) + 1))
-                    angoli_fav = [r.get('HC') if r['HomeTeam'] == squadra_selezionata else r.get('AC') for _, r in df_sq_tot.iterrows()]
-                    angoli_con = [r.get('AC') if r['HomeTeam'] == squadra_selezionata else r.get('HC') for _, r in df_sq_tot.iterrows()]
+                    angoli_fav_raw = np.array([r.get('HC') if r['HomeTeam'] == squadra_selezionata else r.get('AC') for _, r in df_sq_tot.iterrows()], dtype=float)
+                    angoli_con_raw = np.array([r.get('AC') if r['HomeTeam'] == squadra_selezionata else r.get('HC') for _, r in df_sq_tot.iterrows()], dtype=float)
                     
-                    ax3.plot(x_vals_ang, angoli_fav, marker='s', markersize=3, color='#2a9d8f', label="Angoli Favore", linewidth=1.5)
-                    ax3.plot(x_vals_ang, angoli_con, marker='^', markersize=3, color='#e76f51', label="Angoli Contro", linewidth=1.5, linestyle=':')
-                    ax3.set_xlabel("Incontro", fontsize=6)
-                    ax3.set_ylabel("Corner", fontsize=6)
+                    angoli_fav = np.cumsum(angoli_fav_raw) / x_vals
+                    angoli_con = np.cumsum(angoli_con_raw) / x_vals
+                    
+                    ax3.plot(x_vals, angoli_fav, marker='s', markersize=3, color='#2a9d8f', label="Media Angoli Favore", linewidth=1.5)
+                    ax3.plot(x_vals, angoli_con, marker='^', markersize=3, color='#e76f51', label="Media Angoli Contro", linewidth=1.5, linestyle=':')
+                    
+                    # Forza l'asse x a mostrare unità intere distinte
+                    ax3.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+                    ax3.set_xticks(x_vals)
+                    
+                    ax3.set_xlabel("Giornata", fontsize=6)
+                    ax3.set_ylabel("Media Corner", fontsize=6)
                     ax3.tick_params(axis='both', labelsize=6)
-                    ax3.set_title("Trend Calci d'Angolo", fontsize=8, fontweight='bold')
+                    ax3.set_title("Media Progressiva Calci d'Angolo per Giornata", fontsize=8, fontweight='bold')
                     ax3.legend(fontsize=6, loc='upper left')
                     ax3.grid(True, linestyle='--', alpha=0.3)
                     plt.tight_layout()
